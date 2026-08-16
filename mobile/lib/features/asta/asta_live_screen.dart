@@ -360,12 +360,20 @@ class _SezioneConsiglio extends StatelessWidget {
             ),
             if (consiglio != null) ...[
               const SizedBox(height: 12),
-              VerdictBadge(
-                tone: consiglio!.isRilancia ? VerdictTone.positive : VerdictTone.negative,
-                icon: consiglio!.isRilancia ? Icons.trending_up : Icons.block,
-                label: consiglio!.isRilancia
-                    ? 'RILANCIA (fino a ${consiglio!.prezzoMassimoConsigliato})'
-                    : 'ABBANDONA (max consigliato ${consiglio!.prezzoMassimoConsigliato})',
+              Row(
+                children: [
+                  Expanded(
+                    child: VerdictBadge(
+                      tone: consiglio!.isRilancia ? VerdictTone.positive : VerdictTone.negative,
+                      icon: consiglio!.isRilancia ? Icons.trending_up : Icons.block,
+                      label: consiglio!.isRilancia
+                          ? 'RILANCIA (fino a ${consiglio!.prezzoMassimoConsigliato})'
+                          : 'ABBANDONA (max consigliato ${consiglio!.prezzoMassimoConsigliato})',
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Chip(label: Text(consiglio!.fasciaEtichetta)),
+                ],
               ),
               const SizedBox(height: 8),
               Text(consiglio!.motivazione, style: Theme.of(context).textTheme.bodySmall),

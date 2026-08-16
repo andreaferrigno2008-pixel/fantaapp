@@ -1,3 +1,4 @@
+import { ETICHETTA_FASCIA, type Fascia } from "./fasceGiocatore.js";
 import { RUOLI_CLASSIC, type RuoloClassic } from "./ruoli.js";
 
 // Percentuali standard di ripartizione budget tra ruoli, valori comuni
@@ -68,6 +69,12 @@ export interface ConsiglioInput {
   // asta: calcolato dal chiamante (query sui Player non presenti in
   // nessun AstaPick), non e' responsabilita' di questo modulo puro.
   fvmMedioLiberiStessoRuolo: number;
+  // Fascia del giocatore (top/semitop/fascia_media/scommessa), calcolata
+  // dal chiamante in base a FVM e budget totale dell'asta — vedi
+  // fasceGiocatore.ts. Usata per non trattare allo stesso modo giocatori
+  // di caratura diversa quando il tetto di sicurezza (vedi sotto) li
+  // capperebbe altrimenti allo stesso prezzo massimo.
+  fasciaGiocatore: Fascia;
   prezzoAttuale: number;
 }
 
@@ -77,6 +84,7 @@ export interface ConsiglioOutput {
   budgetResiduo: number;
   slotResiduiRuolo: number;
   slotResiduiTotali: number;
+  fascia: Fascia;
   motivazione: string;
 }
 
@@ -94,6 +102,7 @@ export function calcolaConsiglio(input: ConsiglioInput): ConsiglioOutput {
       budgetResiduo: budget,
       slotResiduiRuolo: slotRuolo,
       slotResiduiTotali,
+      fascia: input.fasciaGiocatore,
       motivazione: `Hai già completato il reparto ${ruolo}: nessuno slot residuo per questo ruolo.`,
     };
   }
@@ -108,19 +117,41 @@ export function calcolaConsiglio(input: ConsiglioInput): ConsiglioOutput {
 
   // Regola di sicurezza fantacalcio: ogni slot ancora da riempire deve
   // valere almeno 1 credito, altrimenti non si riesce a completare la rosa.
+  // Questo tetto e' identico per qualunque giocatore valutato nello stesso
+  // momento dell'asta (dipende solo da budget e slot residui, non dal
+  // giocatore) — quando e' lui a limitare il prezzo (capVincolaValore =
+  // false), il numero risultante NON riflette il valore del giocatore, solo
+  // quanto puoi permetterti in assoluto. Per questo, se in quel caso la
+  // fascia e' "scommessa", conviene comunque abbandonare: spendere gli
+  // ultimi crediti liberi sul giocatore piu' scarso e' un cattivo uso del
+  // vincolo, meglio risparmiarli per un'occasione migliore.
   const tettoSicurezza = budget - Math.max(slotResiduiTotali - 1, 0);
   const prezzoMassimoGrezzo = Math.round(prezzoMedioSlot * pesoValore);
+  const capVincolaValore = prezzoMassimoGrezzo <= tettoSicurezza;
   const prezzoMassimoConsigliato = Math.max(1, Math.min(prezzoMassimoGrezzo, tettoSicurezza));
 
-  const verdetto: "RILANCIA" | "ABBANDONA" =
+  let verdetto: "RILANCIA" | "ABBANDONA" =
     input.prezzoAttuale < prezzoMassimoConsigliato ? "RILANCIA" : "ABBANDONA";
+  if (!capVincolaValore && input.fasciaGiocatore === "scommessa") {
+    verdetto = "ABBANDONA";
+  }
+
+  const nomeFascia = ETICHETTA_FASCIA[input.fasciaGiocatore];
+  const notaTetto = capVincolaValore
+    ? ""
+    : ` Attenzione: questo tetto è dettato dal budget rimanente rispetto agli slot da riempire, ` +
+      `non dal valore del giocatore (fascia ${nomeFascia})` +
+      (input.fasciaGiocatore === "scommessa"
+        ? " — su una scommessa conviene comunque risparmiare per un'occasione migliore."
+        : ".");
 
   const motivazione =
     `Budget residuo: ${budget} crediti, ${slotRuolo} slot liberi in ${ruolo} ` +
     `(${slotResiduiTotali} totali). Budget stimato per ${ruolo}: ${Math.round(budgetRuolo)} ` +
     `crediti (~${Math.round(prezzoMedioSlot)}/slot). FVM giocatore ${input.giocatoreFvm} ` +
-    `vs media liberi ${Math.round(input.fvmMedioLiberiStessoRuolo)} (peso ${pesoValore.toFixed(2)}x) ` +
-    `→ prezzo massimo consigliato ${prezzoMassimoConsigliato}.`;
+    `(fascia ${nomeFascia}) vs media liberi ${Math.round(input.fvmMedioLiberiStessoRuolo)} ` +
+    `(peso ${pesoValore.toFixed(2)}x) → prezzo massimo consigliato ${prezzoMassimoConsigliato}.` +
+    notaTetto;
 
   return {
     verdetto,
@@ -128,6 +159,7 @@ export function calcolaConsiglio(input: ConsiglioInput): ConsiglioOutput {
     budgetResiduo: budget,
     slotResiduiRuolo: slotRuolo,
     slotResiduiTotali,
+    fascia: input.fasciaGiocatore,
     motivazione,
   };
 }
@@ -137,6 +169,7 @@ export interface GiocatoreLibero {
   nome: string;
   ruolo: RuoloClassic;
   fvm: number;
+  fascia: Fascia;
 }
 
 // Ordina i giocatori ancora liberi per convenienza (FVM relativo alla

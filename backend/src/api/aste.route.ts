@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "../db/client.js";
+import { fasciaDiGiocatore } from "../domain/fasceGiocatore.js";
 import { isRuoloClassic, type RuoloClassic } from "../domain/ruoli.js";
 import { valoreGiocatore } from "../domain/valoreGiocatore.js";
 import {
@@ -156,6 +157,7 @@ export async function registerAsteRoutes(app: FastifyInstance) {
       giocatoreRuolo: giocatore.ruoloClassic,
       giocatoreFvm: valoreGiocatore(giocatore),
       fvmMedioLiberiStessoRuolo,
+      fasciaGiocatore: fasciaDiGiocatore(valoreGiocatore(giocatore), asta.budgetTotale),
       prezzoAttuale: Number(query.prezzoAttuale),
     });
 
@@ -182,7 +184,13 @@ export async function registerAsteRoutes(app: FastifyInstance) {
     const slotResidui = slotResiduiPerRuolo(toSlotConfig(asta), toPickInfo(asta.picks));
     const liberiInfo: GiocatoreLibero[] = liberi
       .filter((p): p is typeof p & { ruoloClassic: RuoloClassic } => isRuoloClassic(p.ruoloClassic))
-      .map((p) => ({ id: p.id, nome: p.nome, ruolo: p.ruoloClassic, fvm: valoreGiocatore(p) }));
+      .map((p) => ({
+        id: p.id,
+        nome: p.nome,
+        ruolo: p.ruoloClassic,
+        fvm: valoreGiocatore(p),
+        fascia: fasciaDiGiocatore(valoreGiocatore(p), asta.budgetTotale),
+      }));
 
     const ordinati = ordinaGiocatoriConsigliati(liberiInfo, slotResidui).slice(0, limit);
     return ordinati;
