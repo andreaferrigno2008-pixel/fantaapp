@@ -5,8 +5,9 @@ class ApiClient {
 
   final Dio dio;
 
-  // IP LAN del PC che esegue il backend (rete di casa, scheda Ethernet).
-  // Va aggiornato se il PC cambia rete o riceve un altro IP dal router.
-  // Per l'emulatore Android Studio usare invece 'http://10.0.2.2:3000'.
-  static const defaultBaseUrl = 'http://192.168.1.84:3000';
+  // Backend in produzione su Render (Postgres su Neon): raggiungibile da
+  // qualunque rete, non dipende dal PC. Per sviluppo locale contro il
+  // backend sulla LAN, usare 'http://192.168.1.84:3000'; per l'emulatore
+  // Android Studio, 'http://10.0.2.2:3000'.
+  static const defaultBaseUrl = 'https://fanta-app-backend.onrender.com';
 }
