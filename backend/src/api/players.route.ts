@@ -37,7 +37,7 @@ export async function registerPlayersRoutes(app: FastifyInstance) {
         ruoloClassic: query.ruolo,
         teamId: query.team,
         stagione,
-        nome: query.search ? { contains: query.search } : undefined,
+        nome: query.search ? { contains: query.search, mode: "insensitive" } : undefined,
       },
       include: { team: true },
       orderBy: { quotazioneAttuale: "desc" },
