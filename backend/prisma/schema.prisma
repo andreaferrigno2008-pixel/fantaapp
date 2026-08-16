@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // Postgres (Neon in produzione, ma va bene anche in sviluppo locale
+  // puntando alla stessa istanza o a un branch Neon separato).
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Nota: SQLite non supporta il tipo enum nativo di Prisma, quindi i ruoli
+// sono modellati come String e validati a livello applicativo
+// (vedi backend/src/domain/ruoli.ts). Valori Ruolo: "P" | "D" | "C" | "A".
+
+model Team {
+  id      String   @id @default(cuid())
+  nome    String   @unique
+  sigla   String
+  logoUrl String?
+  players Player[]
+}
+
+model Player {
+  id                String            @id @default(cuid())
+  nome              String
+  team              Team              @relation(fields: [teamId], references: [id])
+  teamId            String
+  ruoloClassic      String
+  ruoliMantra       String? // CSV di RuoloMantra, es. "M,C_M"
+  quotazioneIniziale Int
+  quotazioneAttuale  Int
+  fvm               Int?
+  stagione          String // es. "2025-26"
+
+  quotazioni    PlayerQuotation[]
+  statistiche   MatchdayStat[]
+  astaPicks     AstaPick[]
+  rosaGiocatore RosaGiocatore[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([nome, teamId, stagione])
+  @@index([ruoloClassic])
+  @@index([teamId])
+}
+
+model PlayerQuotation {
+  id        String   @id @default(cuid())
+  player    Player   @relation(fields: [playerId], references: [id])
+  playerId  String
+  data      DateTime @default(now())
+  valore    Int
+
+  @@index([playerId, data])
+}
+
+model MatchdayStat {
+  id          String   @id @default(cuid())
+  player      Player   @relation(fields: [playerId], references: [id])
+  playerId    String
+  giornata    Int
+  voto        Float?
+  fantavoto   Float?
+  gol         Int      @default(0)
+  assist      Int      @default(0)
+  ammonizioni Int      @default(0)
+  espulsioni  Int      @default(0)
+  autogol     Int      @default(0)
+
+  @@unique([playerId, giornata])
+  @@index([giornata])
+}
+
+model DataSourceRun {
+  id           String   @id @default(cuid())
+  source       String // es. "quotazioni-import", "voti-scraper", "calendario-scraper"
+  startedAt    DateTime @default(now())
+  finishedAt   DateTime?
+  status       String // "running" | "success" | "error"
+  errorMessage String?
+  recordsCount Int?
+
+  @@index([source, startedAt])
+}
+
+// Una sessione d'asta live. Budget e slot per ruolo sono uguali per tutti
+// i partecipanti (regola standard fantacalcio); i partecipanti sono un
+// elenco chiuso definito al setup, vedi AstaPartecipante.
+model Asta {
+  id           String   @id @default(cuid())
+  stagione     String
+  budgetTotale Int
+  slotP        Int      @default(3)
+  slotD        Int      @default(8)
+  slotC        Int      @default(8)
+  slotA        Int      @default(6)
+  stato        String   @default("in_corso") // "in_corso" | "conclusa"
+  createdAt    DateTime @default(now())
+
+  partecipanti AstaPartecipante[]
+  picks        AstaPick[]
+}
+
+// Elenco chiuso di chi partecipa all'asta, definito al setup. "Io" e'
+// marcato con sonIo=true: e' l'unico partecipante per cui calcoliamo
+// budget/slot residui e i consigli (vedi astaAlgoritmo.ts). Gli altri
+// sono usati solo per registrare chi ha preso cosa, cosi' il giocatore
+// risulta non piu' chiamabile e i consigli tengono conto dello stato
+// reale dell'asta anche per i pick altrui.
+model AstaPartecipante {
+  id     String  @id @default(cuid())
+  asta   Asta    @relation(fields: [astaId], references: [id])
+  astaId String
+  nome   String
+  sonIo  Boolean @default(false)
+
+  picks AstaPick[]
+
+  @@unique([astaId, nome])
+}
+
+model AstaPick {
+  id             String           @id @default(cuid())
+  asta           Asta             @relation(fields: [astaId], references: [id])
+  astaId         String
+  player         Player           @relation(fields: [playerId], references: [id])
+  playerId       String
+  partecipante   AstaPartecipante @relation(fields: [partecipanteId], references: [id])
+  partecipanteId String
+  prezzo         Int
+  createdAt      DateTime         @default(now())
+
+  @@unique([astaId, playerId])
+  @@index([astaId, partecipanteId])
+}
+
+// La rosa reale posseduta dall'utente (non da confondere con una rosa
+// generata da "Formazione ottimale", che e' solo una proposta d'acquisto
+// per l'asta). L'app non ha un concetto di piu' utenti, quindi e' un unico
+// elenco globale: playerId e' unique, un giocatore puo' comparire una
+// sola volta. Usata da formazioneTitolareAlgoritmo.ts per consigliare chi
+// schierare.
+model RosaGiocatore {
+  id        String   @id @default(cuid())
+  player    Player   @relation(fields: [playerId], references: [id])
+  playerId  String   @unique
+  createdAt DateTime @default(now())
+}

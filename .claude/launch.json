@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "fanta-app-web",
+      "runtimeExecutable": "C:\\Users\\Andrea Ferrigno\\Desktop\\fanta app\\mobile\\run_web.bat",
+      "runtimeArgs": [],
+      "port": 8765
+    }
+  ]
+}

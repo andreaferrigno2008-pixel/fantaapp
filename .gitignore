@@ -1,0 +1,25 @@
+# Node / backend
+backend/node_modules/
+backend/dist/
+backend/.env
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+backend/prisma/migrations_sqlite_backup/
+
+# Flutter / mobile
+mobile/.dart_tool/
+mobile/.flutter-plugin-dependencies
+mobile/build/
+mobile/.gradle/
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/app/build/
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+mobile/ios/Flutter/Flutter.podspec
+mobile/*.iml
+mobile/.idea/
+
+# OS
+.DS_Store
+Thumbs.db
