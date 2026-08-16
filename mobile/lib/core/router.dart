@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/asta/asta_rose_screen.dart';
 import '../features/asta/asta_screen.dart';
+import '../features/calendario/calendario_screen.dart';
 import '../features/formazione/formazione_setup_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/scambio/scambio_screen.dart';
@@ -29,5 +30,6 @@ final appRouter = GoRouter(
     GoRoute(path: '/formazione', builder: (context, state) => const FormazioneSetupScreen()),
     GoRoute(path: '/scambio', builder: (context, state) => const ScambioScreen()),
     GoRoute(path: '/settings', builder: (context, state) => const SettingsScreen()),
+    GoRoute(path: '/calendario', builder: (context, state) => const CalendarioScreen()),
   ],
 );

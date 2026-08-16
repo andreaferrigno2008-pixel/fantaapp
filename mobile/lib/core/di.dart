@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/api_client.dart';
 import '../data/local_cache.dart';
 import '../data/repositories/asta_repository.dart';
+import '../data/repositories/calendario_repository.dart';
 import '../data/repositories/formazione_repository.dart';
 import '../data/repositories/players_repository.dart';
 import '../data/repositories/rosa_repository.dart';
@@ -35,4 +36,8 @@ final scambioRepositoryProvider = Provider<ScambioRepository>(
 
 final rosaRepositoryProvider = Provider<RosaRepository>(
   (ref) => RosaRepository(ref.watch(apiClientProvider)),
+);
+
+final calendarioRepositoryProvider = Provider<CalendarioRepository>(
+  (ref) => CalendarioRepository(ref.watch(apiClientProvider)),
 );

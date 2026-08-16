@@ -23,3 +23,6 @@ mobile/.idea/
 # OS
 .DS_Store
 Thumbs.db
+
+# Claude Code local session state (launch.json resta tracciato, e' config di progetto)
+.claude/scheduled_tasks.lock

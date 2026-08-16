@@ -148,3 +148,18 @@ model RosaGiocatore {
   playerId  String   @unique
   createdAt DateTime @default(now())
 }
+
+// Calendario della lega privata dell'utente (chi affronta ogni giornata),
+// inserito a mano — leghe.fantacalcio.it richiede login e la sua API non è
+// documentata, quindi niente scraping/automazione qui (vedi
+// docs/data-sources.md). Non è il calendario di Serie A: è specifico alla
+// singola lega fantacalcio dell'utente, un dato che nessuna fonte pubblica
+// conosce.
+model CalendarioGiornata {
+  id         String @id @default(cuid())
+  stagione   String
+  giornata   Int
+  avversario String
+
+  @@unique([stagione, giornata])
+}

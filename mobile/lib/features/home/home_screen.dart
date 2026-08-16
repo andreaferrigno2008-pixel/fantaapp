@@ -95,6 +95,15 @@ class HomeScreen extends StatelessWidget {
                     onTap: () => context.push('/roster'),
                   ),
                 ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: _CompactTile(
+                    icon: Icons.calendar_month,
+                    title: 'Calendario',
+                    subtitle: 'Avversari di lega',
+                    onTap: () => context.push('/calendario'),
+                  ),
+                ),
               ],
             ),
           ),
