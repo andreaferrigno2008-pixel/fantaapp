@@ -22,6 +22,20 @@ async function caricaAstaConDettagli(astaId: string) {
   });
 }
 
+async function stagioneAstaEffettiva(stagioneAsta: string) {
+  const esiste = await prisma.player.findFirst({
+    where: { stagione: stagioneAsta },
+    select: { id: true },
+  });
+  if (esiste) return stagioneAsta;
+
+  const piuRecente = await prisma.player.findFirst({
+    orderBy: { updatedAt: "desc" },
+    select: { stagione: true },
+  });
+  return piuRecente?.stagione ?? stagioneAsta;
+}
+
 function toSlotConfig(asta: { slotP: number; slotD: number; slotC: number; slotA: number }): SlotConfig {
   return { P: asta.slotP, D: asta.slotD, C: asta.slotC, A: asta.slotA };
 }
@@ -137,10 +151,11 @@ export async function registerAsteRoutes(app: FastifyInstance) {
       return reply.code(400).send({ error: `ruolo non valido: ${giocatore.ruoloClassic}` });
     }
 
+    const stagione = await stagioneAstaEffettiva(asta.stagione);
     const idGiaPresi = asta.picks.map((p) => p.playerId);
     const liberiStessoRuolo = await prisma.player.findMany({
       where: {
-        stagione: asta.stagione,
+        stagione,
         ruoloClassic: giocatore.ruoloClassic,
         id: { notIn: idGiaPresi.length > 0 ? idGiaPresi : undefined },
       },
@@ -172,10 +187,11 @@ export async function registerAsteRoutes(app: FastifyInstance) {
     const asta = await caricaAstaConDettagli(id);
     if (!asta) return reply.code(404).send({ error: "asta non trovata" });
 
+    const stagione = await stagioneAstaEffettiva(asta.stagione);
     const idGiaPresi = asta.picks.map((p) => p.playerId);
     const liberi = await prisma.player.findMany({
       where: {
-        stagione: asta.stagione,
+        stagione,
         id: { notIn: idGiaPresi.length > 0 ? idGiaPresi : undefined },
       },
       include: { team: true },

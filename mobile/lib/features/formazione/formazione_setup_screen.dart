@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -54,6 +55,21 @@ class _FormazioneSetupScreenState extends ConsumerState<FormazioneSetupScreen> {
     });
   }
 
+  Future<String> _resolveSeason() async {
+    if (_obiettivi.isNotEmpty) return _obiettivi.first.stagione;
+    return await ref.read(playersRepositoryProvider).fetchCurrentSeason() ?? '2026-27';
+  }
+
+  String _describeError(Object error) {
+    if (error is DioException) {
+      final data = error.response?.data;
+      if (data is Map<String, dynamic> && data['error'] is String) {
+        return data['error'] as String;
+      }
+    }
+    return 'verifica budget e obiettivi';
+  }
+
   Future<void> _generaFormazione() async {
     setState(() {
       _generando = true;
@@ -61,7 +77,7 @@ class _FormazioneSetupScreenState extends ConsumerState<FormazioneSetupScreen> {
     });
     try {
       final risultato = await ref.read(formazioneRepositoryProvider).genera(
-            stagione: '2025-26',
+            stagione: await _resolveSeason(),
             budgetTotale: int.tryParse(_budgetController.text) ?? 500,
             slotP: int.tryParse(_slotPController.text) ?? 3,
             slotD: int.tryParse(_slotDController.text) ?? 8,
@@ -75,8 +91,8 @@ class _FormazioneSetupScreenState extends ConsumerState<FormazioneSetupScreen> {
           MaterialPageRoute(builder: (_) => FormazioneRisultatoScreen(risultato: risultato)),
         );
       }
-    } catch (_) {
-      setState(() => _errore = 'Impossibile generare la formazione: verifica budget e obiettivi');
+    } catch (error) {
+      setState(() => _errore = 'Impossibile generare la formazione: ${_describeError(error)}');
     } finally {
       if (mounted) setState(() => _generando = false);
     }

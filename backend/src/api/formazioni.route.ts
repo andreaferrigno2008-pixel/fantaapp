@@ -5,6 +5,20 @@ import { valoreGiocatore } from "../domain/valoreGiocatore.js";
 import { generaFormazione, type CandidatoFormazione } from "../domain/formazioneAlgoritmo.js";
 import type { SlotConfig } from "../domain/astaAlgoritmo.js";
 
+async function stagioneFormazioneEffettiva(stagioneRichiesta: string) {
+  const esiste = await prisma.player.findFirst({
+    where: { stagione: stagioneRichiesta },
+    select: { id: true },
+  });
+  if (esiste) return stagioneRichiesta;
+
+  const piuRecente = await prisma.player.findFirst({
+    orderBy: { updatedAt: "desc" },
+    select: { stagione: true },
+  });
+  return piuRecente?.stagione ?? stagioneRichiesta;
+}
+
 export async function registerFormazioniRoutes(app: FastifyInstance) {
   app.post("/formazioni/genera", async (req, reply) => {
     const body = req.body as {
@@ -28,8 +42,9 @@ export async function registerFormazioniRoutes(app: FastifyInstance) {
       A: body.slotA ?? 6,
     };
 
+    const stagione = await stagioneFormazioneEffettiva(body.stagione);
     const players = await prisma.player.findMany({
-      where: { stagione: body.stagione },
+      where: { stagione },
       include: { team: true },
     });
 
@@ -73,6 +88,7 @@ export async function registerFormazioniRoutes(app: FastifyInstance) {
       budgetResiduo: risultato.budgetResiduo,
       fvmTotale: risultato.fvmTotale,
       warning: risultato.warning,
+      stagione,
     };
   });
 }

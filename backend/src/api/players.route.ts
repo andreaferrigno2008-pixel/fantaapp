@@ -16,6 +16,11 @@ async function stagioneCorrente(): Promise<string | null> {
 }
 
 export async function registerPlayersRoutes(app: FastifyInstance) {
+  app.get("/players/current-season", async () => {
+    const stagione = await stagioneCorrente();
+    return { stagione };
+  });
+
   app.get("/players", async (req, reply) => {
     const query = req.query as {
       ruolo?: string;

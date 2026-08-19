@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -33,6 +34,20 @@ class _AstaSetupScreenState extends ConsumerState<AstaSetupScreen> {
     });
   }
 
+  Future<String> _resolveSeason() async {
+    return await ref.read(playersRepositoryProvider).fetchCurrentSeason() ?? '2026-27';
+  }
+
+  String _describeError(Object error) {
+    if (error is DioException) {
+      final data = error.response?.data;
+      if (data is Map<String, dynamic> && data['error'] is String) {
+        return data['error'] as String;
+      }
+    }
+    return 'backend non raggiungibile';
+  }
+
   Future<void> _avviaAsta() async {
     setState(() {
       _creando = true;
@@ -40,7 +55,7 @@ class _AstaSetupScreenState extends ConsumerState<AstaSetupScreen> {
     });
     try {
       final asta = await ref.read(astaRepositoryProvider).creaAsta(
-            stagione: '2025-26',
+            stagione: await _resolveSeason(),
             budgetTotale: int.tryParse(_budgetController.text) ?? 500,
             slotP: int.tryParse(_slotPController.text) ?? 3,
             slotD: int.tryParse(_slotDController.text) ?? 8,
@@ -49,8 +64,8 @@ class _AstaSetupScreenState extends ConsumerState<AstaSetupScreen> {
             avversari: _avversari,
           );
       await ref.read(astaIdProvider.notifier).set(asta.id);
-    } catch (_) {
-      setState(() => _errore = "Impossibile creare l'asta: backend non raggiungibile");
+    } catch (error) {
+      setState(() => _errore = "Impossibile creare l'asta: ${_describeError(error)}");
     } finally {
       if (mounted) setState(() => _creando = false);
     }

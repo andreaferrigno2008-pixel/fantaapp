@@ -18,6 +18,11 @@ class PlayersRepository {
         .toList();
   }
 
+  Future<String?> fetchCurrentSeason() async {
+    final response = await _api.dio.get('/players/current-season');
+    return (response.data as Map<String, dynamic>)['stagione'] as String?;
+  }
+
   Future<Player> fetchPlayerDetail(String id) async {
     final response = await _api.dio.get('/players/$id');
     return Player.fromJson(response.data as Map<String, dynamic>);
